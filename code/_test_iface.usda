@@ -1,0 +1,9 @@
+#usda 1.0
+
+def Xform "Robot" (
+    kind = "component"
+    prepend payload = @F:/newton/OpenUSDTutorial/code/_test_payload.usda@</Robot>
+)
+{
+}
+

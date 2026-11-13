@@ -1,0 +1,15 @@
+#usda 1.0
+(
+    subLayers = [
+        @F:/newton/OpenUSDTutorial/code/_test_base.usda@
+    ]
+)
+
+over "World"
+{
+    over "Ball"
+    {
+        double radius = 2
+    }
+}
+

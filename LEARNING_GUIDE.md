@@ -93,7 +93,7 @@ python build_scripts\build_usd.py `
 ```powershell
 # 临时设置（当前 PowerShell 会话有效）
 $env:PATH = "F:\newton\USD_Install\bin;F:\newton\USD_Install\lib;" + $env:PATH
-$env:PYTHONPATH = "F:\newton\USD_Install\lib\python"
+$env:PYTHONPATH = "F:\newton\USD_Install\Lib\site-packages"
 
 # 永久设置（推荐写入用户环境变量，幂等——可重复运行不会重复追加）
 $userPath = [Environment]::GetEnvironmentVariable("PATH", "User")
@@ -101,10 +101,11 @@ $usdBin = "F:\newton\USD_Install\bin;F:\newton\USD_Install\lib"
 if ($userPath -notlike "*$usdBin*") {
     [Environment]::SetEnvironmentVariable("PATH", "$usdBin;$userPath", "User")
 }
-[Environment]::SetEnvironmentVariable("PYTHONPATH", "F:\newton\USD_Install\lib\python", "User")
+[Environment]::SetEnvironmentVariable("PYTHONPATH", "F:\newton\USD_Install\Lib\site-packages", "User")
 ```
 
 > 设置后**新开一个 PowerShell 窗口**才能生效（当前窗口需用上面的临时设置或重启）。
+> 注意：Python 包安装在 `Lib\site-packages\pxr`（Anaconda 风格），不是 `lib\python\pxr`。
 
 ### 0.5 验证安装
 
@@ -134,7 +135,7 @@ usdview extras/usd/tutorials/convertingLayerFormats/Sphere.usda
 ```json
 {
   "python.defaultInterpreterPath": "python",
-  "python.analysis.extraPaths": ["F:\\newton\\USD_Install\\lib\\python"],
+  "python.analysis.extraPaths": ["F:\\newton\\USD_Install\\Lib\\site-packages"],
   "files.associations": {
     "*.usda": "usd"
   }
@@ -451,7 +452,7 @@ for child in pseudo_root.GetChildren():
 - 路径**不能以数字开头**，不能含空格：`/World/1Robot` ❌，`/World/Robot Arm` ❌
 - 推荐用驼峰命名：`/World/RobotArm`
 
-> **UTF-8 标识符**：USD 支持 UTF-8 标识符（如中文 prim 名），但生产环境强烈建议用 ASCII，避免跨工具兼容性问题。
+> **UTF-8/ASCII 标识符**：USD 标识符为无空格的字母数字字符集加 `_`。ASCII 标识符通常匹配正则 `([A-Za-z_]+[A-Za-z_0-9]*)`（即首字符不能是数字）。UTF-8 标识符使用 Unicode XID 字符类。生产环境强烈建议用 ASCII，避免跨工具兼容性问题。
 
 ### 2.7 Abstract Prims（抽象 Prim）
 
@@ -490,9 +491,11 @@ for child in pseudo_root.GetChildren():
 
 ## 第 3 章：Layer & Layer Stack —— "意见"的层叠
 
-### 3.1 定义（来自 Terms & Concepts）
+### 3.1 定义
 
 > **Layer**：USD 中协作的基本单位。每个 layer 代表一个用户对场景中资产的"意见"。Layer 可以覆盖其他 layer。
+>
+> *注：Layer 不在 NVIDIA Terms & Concepts 术语表中，此定义综合自 USD 官方文档的 Layer Stack 与 Scene Description 相关章节。*
 
 ### 3.2 核心类比：法律体系
 
@@ -1303,7 +1306,7 @@ for prim in stage.TraverseAll():
 # /World/Tree_0/Trunk 会以 instance proxy 形式出现
 ```
 
-`prim.IsInstanceProxy()` 返回 True 表示这个 prim 是"实例投影"，对它的修改会被 USD 拒绝或特殊处理（因为修改实例内部等于修改 prototype，会影响所有实例）。
+`prim.IsInstanceProxy()` 返回 True 表示这个 prim 是"实例投影"，对它的修改会被 USD 拒绝或特殊处理（因为修改实例内部等于修改 prototype，会影响所有实例）。此外，collection 可以包含 instance proxy prim。
 
 ### 8.6 Point Instancer
 
@@ -1436,7 +1439,7 @@ print(f"Ratio: {no_inst_size / inst_size:.2f}x smaller with instancing")
 >
 > **Anchored Asset Path**：资产标识符可"锚定"到其包含 layer，赋能可重定位性和去重。
 >
-> **Asset Path Valued Field**：值为资产系统管理资源路径的 property 或 metadata。
+> **Asset Path Valued Field**：值为资产系统管理资源（layer、纹理、体积等）路径的 property 或 metadata。
 >
 > **Internal Resource**：版本在资产容器内与其他资源共享的资源，通常用"锚定"标识符表示。
 >
@@ -1506,7 +1509,7 @@ USD 的 Asset Resolver（见第 11 章）会把这些"锚定"路径解析成实�
 
 ### 9.5 Internal vs External Resource
 
-- **Internal Resource**：资产内部的资源，版本与资产一起管理。如 `robot_asset/textures/body.png` 属于 robot asset。
+- **Internal Resource**：资产内部的资源，版本与资产一起管理，通常用"锚定"（anchored）标识符表示。如 `robot_asset/textures/body.png` 属于 robot asset。
 - **External Resource**：引用的外部资产，独立版本化。如 robot asset 引用了 `shared_materials/metal.usda`，后者是另一个 asset。
 
 区分意义：版本管理时，internal resource 随 asset 一起版本化；external resource 需要单独管理其版本兼容性。
@@ -1529,7 +1532,7 @@ USD 的 Asset Resolver（见第 11 章）会把这些"锚定"路径解析成实�
 
 ### 9.7 Asset Parameterization
 
-术语表里的概念：**Variant Set + Primvar**，让同一资产支持下游变化。
+术语表里的概念：**Variant Set + Primvar**（通常在 entrypoint prim 上），让同一资产支持下游变化。
 
 例如一个机器人资产：
 - VariantSet "color"：red/blue/green
@@ -2201,19 +2204,19 @@ OpenUSD/
 | Implicit Prototypes | 8 | USD 自动创建的 prototype |
 | Explicit Prototypes | 8 | 用户显式创建的 prototype |
 | Point Instancer | 8 | 海量实例的高效表示 |
-| Instance Proxy Prim | 8 | 访问实例内部内容的占位符 prim |
+| Instance Proxy Prim | 8 | 访问实例内部内容的占位符 prim，collection 可包含 |
 | Globally Refinable Instancing | 8 | 下游可细化的实例化 |
 | Internally Refinable Instancing | 8 | 下游不可细化的实例化 |
 | Inherits-instanceable Pattern | 8 | 用 inherits 让 instanceable 可在上下文编辑 |
 | Asset | 9 | 命名、版本化、结构化的资源容器 |
 | Anchored Asset Path | 9 | 锚定到 layer 的相对路径 |
-| Asset Path Valued Field | 9 | 值为资产路径的 property/metadata |
-| Internal Resource | 9 | 资产内部的资源 |
+| Asset Path Valued Field | 9 | 值为资源路径的 property/metadata（layer/纹理/体积等） |
+| Internal Resource | 9 | 资产内部的资源，通常用 anchored 标识符 |
 | External Resource | 9 | 资产外部的独立版本化资源 |
 | Pipeline | 9 | 资产在生产流程中的流转 |
 | Branch | 9 | 资产的并行版本流 |
 | Fork | 9 | 资产的破坏性复制 |
-| Asset Parameterization | 9 | VariantSet + Primvar 实现的资产可参数化 |
+| Asset Parameterization | 9 | VariantSet + Primvar（通常在 entrypoint prim）实现资产可参数化 |
 | Session Artifact | 9 | 不落盘的临时会话数据 |
 | Reference-payload Pattern | 10 | 轻量 reference + 重型 payload 的资产拆分模式 |
 | Lofting | 10 | 把关键 metadata 从 payload 抬升到 reference 层 |

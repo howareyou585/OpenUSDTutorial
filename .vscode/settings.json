@@ -1,0 +1,29 @@
+{
+    // 指定 Python 解释器为 Anaconda（USD 编译时用的）
+    "python.defaultInterpreterPath": "D:\\anaconda3\\python.exe",
+    
+    // 让 Python 扩展能找到 USD 的 Python 包（用于代码补全/类型检查）
+    "python.analysis.extraPaths": [
+        "F:\\newton\\USD_Install\\Lib\\site-packages"
+    ],
+    
+    // 自定义 Terminal：用脚本初始化环境变量，保留系统原有 PATH
+    "terminal.integrated.profiles.windows": {
+        "USD PowerShell": {
+            "path": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+            "args": [
+                "-NoExit",
+                "-Command",
+                "$env:PYTHONPATH='F:\\newton\\USD_Install\\Lib\\site-packages'; $env:PATH='F:\\newton\\USD_Install\\bin;F:\\newton\\USD_Install\\lib;'+$env:PATH; cd 'F:\\newton\\OpenUSDTutorial'"
+            ]
+        }
+    },
+    "terminal.integrated.defaultProfile.windows": "USD PowerShell",
+    
+    // USDA 文件语法高亮
+    "files.associations": {
+        "*.usda": "yaml",
+        "*.usd": "yaml",
+        "*.usdc": "yaml"
+    }
+}
